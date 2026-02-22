@@ -3,6 +3,7 @@ from garminconnect import Garmin
 from notion_client import Client
 from dotenv import load_dotenv
 import os
+from units import meters_to_distance, distance_label
 
 def get_all_daily_steps(garmin):
     """
@@ -42,7 +43,7 @@ def steps_need_update(existing_steps, new_steps):
     return (
         existing_props['Total Steps']['number'] != new_steps.get('totalSteps') or
         existing_props['Step Goal']['number'] != new_steps.get('stepGoal') or
-        existing_props['Total Distance (km)']['number'] != new_steps.get('totalDistance') or
+        existing_props[f'Total Distance ({distance_label()})']['number'] != new_steps.get('totalDistance') or
         existing_props['Activity Type']['title'] != activity_type
     )
 
@@ -57,7 +58,7 @@ def update_daily_steps(client, existing_steps, new_steps):
         "Activity Type":  {"title": [{"text": {"content": "Walking"}}]},
         "Total Steps": {"number": new_steps.get('totalSteps')},
         "Step Goal": {"number": new_steps.get('stepGoal')},
-        "Total Distance (km)": {"number": round(total_distance / 1000, 2)}
+        f"Total Distance ({distance_label()})": {"number": round(meters_to_distance(total_distance), 2)}
     }
     
     update = {
@@ -79,7 +80,7 @@ def create_daily_steps(client, database_id, steps):
         "Date": {"date": {"start": steps.get('calendarDate')}},
         "Total Steps": {"number": steps.get('totalSteps')},
         "Step Goal": {"number": steps.get('stepGoal')},
-        "Total Distance (km)": {"number": round(total_distance / 1000, 2)}
+        f"Total Distance ({distance_label()})": {"number": round(meters_to_distance(total_distance), 2)}
     }
     
     page = {

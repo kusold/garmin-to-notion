@@ -38,6 +38,11 @@ For more advanced users, follow these steps to set up the integration:
   * NOTION_PR_DB_ID
   * NOTION_STEPS_DB_ID (optional)
   * NOTION_SLEEP_DB_ID (optional)
+* Optional repository variables:
+  * UNIT_SYSTEM - Set to `imperial` to use miles/feet instead of km/m (default: `metric`). You can also select this when manually triggering the workflow.
+  * TIMEZONE - Your local timezone in IANA format, e.g., `America/New_York`, `Europe/London` (default: `UTC`).
+
+> **Note:** When using imperial units, make sure your Notion database column names match the unit system (e.g., "Distance (mi)" instead of "Distance (km)", "Total Distance (mi)" instead of "Total Distance (km)").
 ### 5. Run Scripts (if not using automatic workflow)
 * Run [garmin-activities.py](https://github.com/chloevoyer/garmin-to-notion/blob/main/garmin-activities.py) to sync your Garmin activities to Notion.  
 `python garmin-activities.py`

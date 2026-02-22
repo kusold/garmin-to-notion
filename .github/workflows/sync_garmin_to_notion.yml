@@ -4,8 +4,17 @@ on:
   schedule:
     - cron: '0 1 * * *' # Daily
   workflow_dispatch:
+    inputs:
+      unit_system:
+        description: 'Unit system for distance and pace (metric or imperial)'
+        required: false
+        default: 'metric'
+        type: choice
+        options:
+          - metric
+          - imperial
 env:
-  TZ: 'America/Montreal'
+  TZ: ${{ vars.TIMEZONE || 'UTC' }}
 
 jobs:
   sync:
@@ -41,7 +50,9 @@ jobs:
           NOTION_STEPS_DB_ID: ${{ secrets.NOTION_STEPS_DB_ID }}
           NOTION_SLEEP_DB_ID: ${{ secrets.NOTION_SLEEP_DB_ID }}
           GARMIN_ACTIVITIES_FETCH_LIMIT: ${{ vars.GARMIN_ACTIVITIES_FETCH_LIMIT }}
-          TZ: 'America/Montreal'
+          UNIT_SYSTEM: ${{ inputs.unit_system || vars.UNIT_SYSTEM || 'metric' }}
+          TIMEZONE: ${{ vars.TIMEZONE || 'UTC' }}
+          TZ: ${{ vars.TIMEZONE || 'UTC' }}
         run: |
           python garmin-activities.py
           python personal-records.py
