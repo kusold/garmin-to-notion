@@ -8,7 +8,11 @@ import os
 # Load environment variables
 load_dotenv()
 
-local_tz = pytz.timezone(os.getenv("TIMEZONE", "UTC"))
+try:
+    local_tz = pytz.timezone(os.getenv("TIMEZONE", "UTC"))
+except pytz.exceptions.UnknownTimeZoneError:
+    print(f"Warning: Unknown timezone '{os.getenv('TIMEZONE')}', falling back to UTC")
+    local_tz = pytz.UTC
 CONFIG = dotenv_values()
 
 def get_sleep_data(garmin):

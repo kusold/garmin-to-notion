@@ -9,7 +9,11 @@ from units import meters_to_distance, distance_label, pace_distance_meters
 
 load_dotenv()
 
-local_tz = pytz.timezone(os.getenv("TIMEZONE", "UTC"))
+try:
+    local_tz = pytz.timezone(os.getenv("TIMEZONE", "UTC"))
+except pytz.exceptions.UnknownTimeZoneError:
+    print(f"Warning: Unknown timezone '{os.getenv('TIMEZONE')}', falling back to UTC")
+    local_tz = pytz.UTC
 
 ACTIVITY_ICONS = {
     "Barre": "https://img.icons8.com/?size=100&id=66924&format=png&color=000000",
