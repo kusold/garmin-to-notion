@@ -2,6 +2,10 @@ from datetime import date, datetime
 from garminconnect import Garmin
 from notion_client import Client
 import os
+from units import (
+    is_imperial, meters_to_distance, distance_label, pace_label,
+    elevation_convert, elevation_label, KM_PER_MILE,
+)
 
 def get_icon_for_record(activity_name):
     icon_map = {
@@ -50,9 +54,15 @@ def format_activity_name(activity_name):
 def format_garmin_value(value, activity_type, typeId):
     if typeId  == 1:  # 1K
         total_seconds = round(value)  # Round to the nearest second
-        minutes = total_seconds // 60
-        seconds = total_seconds % 60
-        formatted_value = f"{minutes}:{seconds:02d} /km"
+        if is_imperial():
+            total_pace_seconds = round(value * KM_PER_MILE)
+            pminutes = total_pace_seconds // 60
+            pseconds = total_pace_seconds % 60
+            formatted_value = f"{pminutes}:{pseconds:02d} {pace_label()}"
+        else:
+            minutes = total_seconds // 60
+            seconds = total_seconds % 60
+            formatted_value = f"{minutes}:{seconds:02d} {pace_label()}"
         pace = formatted_value  # For these types, the value is the pace
         return formatted_value, pace
 
@@ -61,10 +71,13 @@ def format_garmin_value(value, activity_type, typeId):
         minutes = total_seconds // 60
         seconds = total_seconds % 60
         formatted_value = f"{minutes}:{seconds:02d}"
-        total_pseconds = total_seconds / 1.60934  # Divide by 1.60934 to get pace per km
-        pminutes = int(total_pseconds // 60)      # Convert to integer
-        pseconds = int(total_pseconds % 60)       # Convert to integer
-        formatted_pace = f"{pminutes}:{pseconds:02d} /km"
+        if is_imperial():
+            formatted_pace = f"{minutes}:{seconds:02d} {pace_label()}"
+        else:
+            total_pseconds = total_seconds / KM_PER_MILE  # Divide by 1.60934 to get pace per km
+            pminutes = int(total_pseconds // 60)      # Convert to integer
+            pseconds = int(total_pseconds % 60)       # Convert to integer
+            formatted_pace = f"{pminutes}:{pseconds:02d} {pace_label()}"
         return formatted_value, formatted_pace
 
     if typeId == 3:  # 5K
@@ -72,10 +85,13 @@ def format_garmin_value(value, activity_type, typeId):
         minutes = total_seconds // 60
         seconds = total_seconds % 60
         formatted_value = f"{minutes}:{seconds:02d}"
-        total_pseconds = total_seconds // 5  # Divide by 5km
-        pminutes = total_pseconds // 60
-        pseconds = total_pseconds % 60
-        formatted_pace = f"{pminutes}:{pseconds:02d} /km"
+        if is_imperial():
+            total_pseconds = total_seconds / (5 / KM_PER_MILE)
+        else:
+            total_pseconds = total_seconds // 5  # Divide by 5km
+        pminutes = int(total_pseconds // 60)
+        pseconds = int(total_pseconds % 60)
+        formatted_pace = f"{pminutes}:{pseconds:02d} {pace_label()}"
         return formatted_value, formatted_pace
 
     if typeId == 4:  # 10K
@@ -88,22 +104,25 @@ def format_garmin_value(value, activity_type, typeId):
             formatted_value = f"{hours}:{minutes:02d}:{seconds:02d}"
         else:
             formatted_value = f"{minutes}:{seconds:02d}"
-        total_pseconds = total_seconds // 10  # Divide by 10km
+        if is_imperial():
+            total_pseconds = total_seconds / (10 / KM_PER_MILE)
+        else:
+            total_pseconds = total_seconds // 10  # Divide by 10km
         phours = total_pseconds // 3600
-        pminutes = (total_pseconds % 3600) // 60
-        pseconds = total_pseconds % 60
-        formatted_pace = f"{pminutes}:{pseconds:02d} /km"
+        pminutes = int((total_pseconds % 3600) // 60)
+        pseconds = int(total_pseconds % 60)
+        formatted_pace = f"{pminutes}:{pseconds:02d} {pace_label()}"
         return formatted_value, formatted_pace
 
     if typeId in [7, 8]:  # Longest Run, Longest Ride
-        value_km = value / 1000
-        formatted_value = f"{value_km:.2f} km"
+        dist = meters_to_distance(value)
+        formatted_value = f"{dist:.2f} {distance_label()}"
         pace = ""  # No pace for these types
         return formatted_value, pace
 
     if typeId == 9:  # Total Ascent
-        value_m = int(value)
-        formatted_value = f"{value_m:,} m"
+        elev = elevation_convert(value)
+        formatted_value = f"{elev:,} {elevation_label()}"
         pace = ""
         return formatted_value, pace
 
