@@ -7,8 +7,9 @@ from garminconnect import Garmin as GarminClient
 from notion_client import Client as NotionClient
 from units import meters_to_distance, distance_label, pace_distance_meters
 
-# Your local time zone, replace with the appropriate one if needed
-local_tz = pytz.timezone('America/Toronto')
+load_dotenv()
+
+local_tz = pytz.timezone(os.getenv("TIMEZONE", "UTC"))
 
 ACTIVITY_ICONS = {
     "Barre": "https://img.icons8.com/?size=100&id=66924&format=png&color=000000",

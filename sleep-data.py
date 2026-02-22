@@ -5,11 +5,10 @@ from dotenv import load_dotenv, dotenv_values
 import pytz
 import os
 
-# Constants
-local_tz = pytz.timezone("America/New_York")
-
 # Load environment variables
 load_dotenv()
+
+local_tz = pytz.timezone(os.getenv("TIMEZONE", "UTC"))
 CONFIG = dotenv_values()
 
 def get_sleep_data(garmin):

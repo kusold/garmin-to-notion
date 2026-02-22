@@ -14,7 +14,7 @@ on:
           - metric
           - imperial
 env:
-  TZ: 'America/Montreal'
+  TZ: ${{ vars.TIMEZONE || 'UTC' }}
 
 jobs:
   sync:
@@ -51,7 +51,8 @@ jobs:
           NOTION_SLEEP_DB_ID: ${{ secrets.NOTION_SLEEP_DB_ID }}
           GARMIN_ACTIVITIES_FETCH_LIMIT: ${{ vars.GARMIN_ACTIVITIES_FETCH_LIMIT }}
           UNIT_SYSTEM: ${{ inputs.unit_system || vars.UNIT_SYSTEM || 'metric' }}
-          TZ: 'America/Montreal'
+          TIMEZONE: ${{ vars.TIMEZONE || 'UTC' }}
+          TZ: ${{ vars.TIMEZONE || 'UTC' }}
         run: |
           python garmin-activities.py
           python personal-records.py
