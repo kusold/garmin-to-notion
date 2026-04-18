@@ -119,18 +119,26 @@ def format_pace(average_speed: float) -> str:
 def activity_exists(
     notion_client: NotionClient,
     database_id: str,
+    garmin_activity_id: int | None,
     activity_date: datetime,
     activity_type: str,
     activity_name: str,
 ) -> dict | None:
     # Check if an activity already exists in the Notion database and return it if found.
 
-    # Determine the correct activity type for the lookup
-    lookup_type = "Stretching" if "stretch" in activity_name.lower() else activity_type
+    # Primary lookup: search by Garmin Activity ID (unique per activity)
+    if garmin_activity_id is not None:
+        query = notion_client.databases.query(
+            database_id=database_id,
+            filter={"property": "Garmin Activity ID", "number": {"equals": garmin_activity_id}}
+        )
+        results = query['results']
+        if results:
+            return results[0]
 
-    # Create a time window to search for the activity. Notion has been observed to truncate datetimes to the minutes in
-    # some instances, causing the lookup using exact datetime to fail.
-    # TODO: We should store the activity ID in the Notion page to avoid this complexity.
+    # Fallback: for existing Notion entries created before Garmin Activity ID was tracked,
+    # match by date ±5 min + activity type + name, then backfill the ID.
+    lookup_type = "Stretching" if "stretch" in activity_name.lower() else activity_type
     lookup_min_date = activity_date - timedelta(minutes=5)
     lookup_max_date = activity_date + timedelta(minutes=5)
 
@@ -140,13 +148,18 @@ def activity_exists(
             "and": [
                 {"property": "Date", "date": {"on_or_after": lookup_min_date.isoformat()}},
                 {"property": "Date", "date": {"on_or_before": lookup_max_date.isoformat()}},
-                # Further refine the search by activity type and name
                 {"property": "Activity Type", "select": {"equals": lookup_type}},
                 {"property": "Activity Name", "title": {"equals": activity_name}}
             ]
         }
     )
     results = query['results']
+    if results and garmin_activity_id is not None:
+        # Backfill Garmin Activity ID on the matched entry
+        notion_client.pages.update(
+            page_id=results[0]['id'],
+            properties={"Garmin Activity ID": {"number": garmin_activity_id}}
+        )
     return results[0] if results else None
 
 
@@ -227,7 +240,8 @@ def create_activity(notion_client: NotionClient, database_id: str, activity: dic
             "select": {"name": format_training_message(activity.get('anaerobicTrainingEffectMessage', 'Unknown'))}
         },
         "PR": {"checkbox": activity.get('pr', False)},
-        "Fav": {"checkbox": activity.get('favorite', False)}
+        "Fav": {"checkbox": activity.get('favorite', False)},
+        "Garmin Activity ID": {"number": activity.get('activityId')}
     }
 
     page = {
@@ -318,7 +332,9 @@ def main():
         )
 
         # Check if activity already exists in Notion
-        existing_activity = activity_exists(notion_client, database_id, activity_date, activity_type, activity_name)
+        existing_activity = activity_exists(
+            notion_client, database_id, activity.get('activityId'), activity_date, activity_type, activity_name
+        )
 
         if existing_activity:
             if activity_needs_update(existing_activity, activity):
